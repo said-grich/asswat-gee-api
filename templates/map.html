@@ -1,0 +1,45 @@
+{% load leaflet_tags %}
+
+{% leaflet_css %}
+{% leaflet_js %}
+
+{% block content %}
+<div id="mapid" style="height: 500px;"></div>
+
+<script type="text/javascript">
+    var map = L.map('mapid').setView([51.505, -0.09], 13);
+    var drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    var drawControl = new L.Control.Draw({
+        edit: {
+            featureGroup: drawnItems
+        },
+        draw: {
+            polygon: true,
+            circle: false,
+            rectangle: false,
+            marker: false,
+            polyline: false,
+            circlemarker: false
+        }
+    });
+    map.addControl(drawControl);
+
+    map.on('draw:created', function (e) {
+        var type = e.layerType;
+        var layer = e.layer;
+        drawnItems.addLayer(layer);
+        var polygon = JSON.stringify(layer.toGeoJSON().geometry);
+        var name = prompt("Enter a name for the polygon:", "");
+        if (name != null) {
+            var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            $.post("{% url 'save_polygon' %}", {
+                name: name,
+                polygon: polygon,
+                csrfmiddlewaretoken: csrftoken
+            });
+        }
+    });
+</script>
+{% endblock %}
