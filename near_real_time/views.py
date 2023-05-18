@@ -1,19 +1,14 @@
 import json
 
-from matplotlib import pyplot as plt
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-import ee
 from django.shortcuts import render
 import folium
 from folium.plugins import Draw
 
 from django.http import JsonResponse
-import base64
-import io
-from PIL import Image
-import numpy as np
+
 from near_real_time.gee.lst_landsat import LandsatLst
 from near_real_time.gee.lst_modis import ModisLst
 from near_real_time.gee.ndvi_landsat8 import Landsat8Ndvi
