@@ -1,7 +1,4 @@
 import ee
-import geemap
-import time
-
 import numpy as np
 
 
