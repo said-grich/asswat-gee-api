@@ -15,7 +15,7 @@ class ModisNdvi:
         self.polygon = ee.Geometry.Polygon(polygon)
         # Load the image collection
         collection = ee.ImageCollection('MODIS/006/MOD13Q1') \
-            .filterBounds(polygon) \
+            .filterBounds(self.polygon) \
             .filterDate(startDate, endDate)
 
         # Select the desired band
@@ -30,6 +30,7 @@ class ModisNdvi:
                 date_string_modis = ee.Date(image_modis.get('system:time_start')).format('YYYY-MM-dd').getInfo()
                 masked_ = self.mask_out(image_modis)
                 array_modis = np.array(masked_.getInfo()["properties"]["NDVI"])
+                array_modis = array_modis * 0.0001
                 array_modis = np.where(array_modis == -999, None, array_modis)
-                modis_resault.append({"ndvi": array_modis * 0.0001, "date": date_string_modis, "product": 'MOD11A1'})
+                modis_resault.append({"ndvi": array_modis, "date": date_string_modis, "product": 'MOD11A1'})
             return modis_resault

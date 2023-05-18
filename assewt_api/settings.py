@@ -37,8 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "data_api",
-    'near_real_time'
+    'near_real_time',
 
 ]
 

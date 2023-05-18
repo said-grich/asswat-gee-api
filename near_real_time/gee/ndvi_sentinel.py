@@ -25,7 +25,7 @@ class Sentinel2Ndvi:
         collection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
             .filterBounds(self.polygon) \
             .filterDate(startDate, endDate) \
-            .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 0.1))
+            .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 1))
         sentinel_resault = []
         for image in collection.toList(collection.size()).getInfo():
             sentinel_image = ee.Image(image['id'])
@@ -34,7 +34,7 @@ class Sentinel2Ndvi:
             masked_image = self.mask_out(sentinel_image)
             array_sentinel = masked_image.getInfo()
             array_sentinel = np.array(array_sentinel["properties"]["NDVI"])
-            array_sentinel = np.where(array_sentinel == -999,None, array_sentinel)
+            array_sentinel = np.where(array_sentinel == -999,np.nan, array_sentinel)
             sentinel_resault.append(
                 {"ndvi": array_sentinel, "date": date_string_sentinel, "product": 'S2_SR_HARMONIZED'})
         return sentinel_resault

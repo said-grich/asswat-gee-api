@@ -1,45 +1,312 @@
-{% load leaflet_tags %}
+<!DOCTYPE html>
+<html>
+<head>
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css"
+    />
+    <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
+    />
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+            integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N"
+            crossorigin="anonymous"
+    />
+    <title>Map</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 400px;
+      }
+      datepicker .datepicker-days tr,
+  .datepicker .datepicker-months table {
+    background-color: #f8f9fa;
+  }
 
-{% leaflet_css %}
-{% leaflet_js %}
+  .datepicker .datepicker-days th,
+  .datepicker .datepicker-months th,
+  .datepicker .datepicker-months td,
+  .datepicker .datepicker-years th,
+  .datepicker .datepicker-years td {
+    color: #212529;
+    font-weight: bold;
+    text-align: center;
+    padding: 5px;
+  }
 
-{% block content %}
-<div id="mapid" style="height: 500px;"></div>
+  .datepicker .datepicker-days .old,
+  .datepicker .datepicker-days .new {
+    color: #adb5bd;
+  }
 
-<script type="text/javascript">
-    var map = L.map('mapid').setView([51.505, -0.09], 13);
-    var drawnItems = new L.FeatureGroup();
-    map.addLayer(drawnItems);
 
-    var drawControl = new L.Control.Draw({
+ .spinner-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.4);
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .spinner {
+        width: 3rem;
+        height: 3rem;
+        border: 0.25em solid currentColor;
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spinner-border 0.75s linear infinite;
+      }
+
+      @keyframes spinner-border {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .datepicker {
+    z-index: 9999;
+    background-color: #fff;
+    padding:50px;
+    color: #495057;
+    border: 1px solid #ced4da;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: 0.25rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+
+  /* Custom styles for the datepicker dropdown */
+  .datepicker-dropdown {
+      padding:10px;
+
+    z-index: 9999 !important;
+    border: 1px solid #ced4da;
+    border-top: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  }
+
+    </style>
+</head>
+<body>
+<div
+        id="spinner"
+        class="spinner-overlay"
+        style="display: none;"
+>
+    <div class="spinner"></div>
+</div>
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">GEE SCRAPER</a>
+        <button
+                class="navbar-toggler"
+                type="button"
+                data-toggle="collapse"
+                data-target="#navbarResponsive"
+                aria-controls="navbarResponsive"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ml-auto"></ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+  <div class="row">
+    <div class="col-lg-12 text-center">
+      <h1 class="mt-5">Google Earth Engine Data Extractor</h1>
+      <p class="lead">You'll be seeing shapefiles stored in the database</p>
+      <div id="map"></div>
+
+      <div class="form-row">
+        <div class="col">
+          <div class="form-group">
+            <label for="start-date">Start Date:</label>
+            <input type="text" id="start-date" class="form-control datepicker" autocomplete="off">
+          </div>
+        </div>
+        <div class="col">
+          <div class="form-group">
+            <label for="end-date">End Date:</label>
+            <input type="text" id="end-date" class="form-control datepicker" autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <button id="submit-button" class="btn btn-primary mt-3">Submit</button>
+
+      <div class="mt-5 text-center">
+        <img id="image-field" src="" alt="Image" class="img-fluid mx-auto d-block" style="display: none;">
+      </div>
+
+      <div id="chart" class="mt-5 mx-auto" style="display: none; width: 100%;"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"
+        integrity="sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+"
+        crossorigin="anonymous"
+></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<script>
+      $(".datepicker").datepicker({
+        format: "yyyy-mm-dd",
+        autoclose: true
+      });
+      var map = L.map("map").setView(
+        [33.14811080869278, -8.469759582233934],
+        12
+      );
+
+      L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+        maxZoom: 20,
+        attribution: "Google Satellite",
+        id: "mapbox/satellite-v9",
+        tileSize: 512,
+        zoomOffset: -1,
+      }).addTo(map);
+
+      var drawnItems = new L.FeatureGroup();
+      map.addLayer(drawnItems);
+
+      var drawControl = new L.Control.Draw({
         edit: {
-            featureGroup: drawnItems
+          featureGroup: drawnItems,
         },
         draw: {
-            polygon: true,
-            circle: false,
-            rectangle: false,
-            marker: false,
-            polyline: false,
-            circlemarker: false
-        }
-    });
-    map.addControl(drawControl);
+          polygon: true,
+          polyline: false,
+          rectangle: true,
+          circle: true,
+          marker: true,
+          circlemarker: false,
+        },
+      });
+      map.addControl(drawControl);
 
-    map.on('draw:created', function (e) {
-        var type = e.layerType;
+      var selectedPolygon=[]
+
+      map.on("draw:created", function (e) {
         var layer = e.layer;
         drawnItems.addLayer(layer);
-        var polygon = JSON.stringify(layer.toGeoJSON().geometry);
-        var name = prompt("Enter a name for the polygon:", "");
-        if (name != null) {
-            var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            $.post("{% url 'save_polygon' %}", {
-                name: name,
-                polygon: polygon,
-                csrfmiddlewaretoken: csrftoken
-            });
-        }
+
+        // Get the polygon coordinates
+        var polygon = layer.toGeoJSON();
+       selectedPolygon= polygon.geometry.coordinates[0];
+      });
+
+       $("#submit-button").click(function () {
+    // Get the start date and end date values
+    var startDate = $("#start-date").val();
+    var endDate = $("#end-date").val();
+
+    console.log(selectedPolygon,startDate,endDate)
+    // Send the AJAX request
+    $.ajax({
+      url: "get_polygon_coordinates/",
+      type: "POST",
+      data: {
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+        startDate: startDate,
+        endDate: endDate,
+        coordinates: JSON.stringify(selectedPolygon),
+      },
+      beforeSend: function () {
+        // Show the spinner before the request starts
+        $("#spinner").show();
+      },
+     success: function (response) {
+  if (response.image_uri) {
+    // Update the image source with the returned image URI
+    var imageField = document.getElementById("image-field");
+    imageField.src = response.image_uri;
+    imageField.style.display = "block";
+  } else {
+    // Hide the image if no image URI is returned
+    var imageField = document.getElementById("image-field");
+    imageField.style.display = "none";
+  }
+
+  if (response.ndvi_data) {
+    // Process the NDVI data
+    var ndviData = response.ndvi_data;
+
+    // Prepare data for the chart
+    var dates = Object.keys(ndviData);
+    var ndviValues = Object.values(ndviData);
+    console.log(ndviData)
+    // Create the chart
+    var chartData = [
+      {
+        x: dates,
+        y: ndviValues,
+        type: "scatter",
+        mode: "lines+markers",
+        marker: {
+          color: "blue",
+          size: 5,
+        },
+        line: {
+          color: "blue",
+          width: 2,
+        },
+      },
+    ];
+
+    var layout = {
+      title: "NDVI by Time",
+      xaxis: {
+        title: "Date",
+      },
+      yaxis: {
+        title: "NDVI",
+      },
+    };
+
+    Plotly.newPlot("chart", chartData, layout);
+    document.getElementById("chart").style.display = "block";
+  } else {
+    // Hide the chart if no NDVI data is returned
+    document.getElementById("chart").style.display = "none";
+  }
+},
+
+      complete: function () {
+        // Hide the spinner after the request completes (success or error)
+        $("#spinner").hide();
+      },
     });
+  });
+
+
+
+
+
 </script>
-{% endblock %}
+</body>
+</html>
