@@ -18,6 +18,5 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('data/', include("near_real_time.urls")),
+    path('', include("near_real_time.urls")),
 ]

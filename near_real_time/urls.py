@@ -8,6 +8,6 @@ urlpatterns = [
     path('sentinel2/ndvi/', Sentinel2NdviDownloadView.as_view(), name='landsat_ndvi_download'),
     path('modis/ndvi/', ModisNdviDownloadView.as_view(), name='landsat_ndvi_download'),
     path('modis/lst/', ModisLSTDownloadView.as_view(), name='landsat_ndvi_download'),
-    path('map/', map_view, name='gee_map'),
-    path('map/get_polygon_coordinates/', get_polygon_coordinates, name='get_polygon_coordinates'),
+    path('', map_view, name='gee_map'),
+    path('/get_polygon_coordinates/', get_polygon_coordinates, name='get_polygon_coordinates'),
 ]
