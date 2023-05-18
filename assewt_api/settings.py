@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-iwd#t#=ro*(%w%-cjdf=sl*-oubar!(k8bmnwcsk0e4)g@(fyo
 DEBUG = True
 
 ALLOWED_HOSTS = []
-ALLOWED_HOSTS = ['https://gee-data-assiwat.herokuapp.com/', 'gee-data-assiwat.herokuapp.com']
+ALLOWED_HOSTS = ['*', 'gee-data-assiwat.herokuapp.com']
 
 
 # Application definition
