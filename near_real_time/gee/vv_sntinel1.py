@@ -25,7 +25,7 @@ class Sentinel1:
                 masked_image = self.mask_out(sentinel_image)
                 array_sentinel = masked_image.getInfo()
                 array_sentinel = np.array(array_sentinel["properties"][band])
-                array_sentinel = np.where(array_sentinel == -999, np.nan, array_sentinel)
+                array_sentinel = np.where(array_sentinel == -999, None, array_sentinel)
                 results_.append({band: array_sentinel, "date": date_string_sentinel, "product": 'COPERNICUS/S1_GRD'})
             return results_
         else:

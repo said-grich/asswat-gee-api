@@ -33,7 +33,7 @@ class Sentinel2Ndvi:
                 masked_image = self.mask_out(sentinel_image)
                 array_sentinel = masked_image.getInfo()
                 array_sentinel = np.array(array_sentinel["properties"]["NDVI"])
-                array_sentinel = np.where(array_sentinel == -999,np.nan, array_sentinel)
+                array_sentinel = np.where(array_sentinel == -999,None, array_sentinel)
                 sentinel_resault.append(
                     {"ndvi": array_sentinel, "date": date_string_sentinel, "product": 'S2_SR_HARMONIZED'})
             return sentinel_resault

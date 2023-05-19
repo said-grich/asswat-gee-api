@@ -1,3 +1,7 @@
+import base64
+import numpy as np
+import io
+import matplotlib.pyplot as plt
 import json
 
 from rest_framework.views import APIView
@@ -14,6 +18,7 @@ from near_real_time.gee.lst_modis import ModisLst
 from near_real_time.gee.ndvi_landsat8 import Landsat8Ndvi
 from near_real_time.gee.ndvi_modis import ModisNdvi
 from near_real_time.gee.ndvi_sentinel import Sentinel2Ndvi
+from near_real_time.gee.vv_sntinel1 import Sentinel1
 
 
 def map_view(request):
@@ -21,7 +26,8 @@ def map_view(request):
     m = folium.Map(location=[-8.469759582233934,
                              33.14811080869278], zoom_start=8, crs='EPSG4326', control_scale=True)
     # Add a satellite tile layer to the map
-    folium.TileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attr='Google Satellite', name='Satellite').add_to(m)
+    folium.TileLayer(
+        'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attr='Google Satellite', name='Satellite').add_to(m)
 
     # Add a Draw control to enable polygon selection
     draw = Draw(export=True)
@@ -34,15 +40,6 @@ def map_view(request):
     return render(request, 'map.html')
 
 
-import matplotlib.pyplot as plt
-import io
-
-import io
-import matplotlib.pyplot as plt
-import numpy as np
-import base64
-
-
 def to_image(numpy_img):
     # Normalize the NDVI data to 0-255 range
     normalized_img = (numpy_img + 1) * 127.5
@@ -52,7 +49,7 @@ def to_image(numpy_img):
     fig, ax = plt.subplots(figsize=(5, 5))
 
     # Display the NDVI image
-    ax.imshow(normalized_img,  vmin=0, vmax=255)
+    ax.imshow(normalized_img, cmap='RdYlGn', vmin=0, vmax=255)
 
     # Remove the axis ticks and labels
     ax.set_xticks([])
@@ -75,7 +72,6 @@ def to_image(numpy_img):
     return image_uri
 
 
-
 def get_polygon_coordinates(request):
     if request.method == 'POST':
         coordinates = request.POST.get('coordinates')
@@ -87,24 +83,25 @@ def get_polygon_coordinates(request):
 
         result = sentinel2Ndvi.download(coordinates, start_date, end_date)
         numpy_image = result[0]["ndvi"]
+        numpy_image = np.where(numpy_image == None,0, numpy_image)
         # Create a boolean mask for NaN values
-        mask = np.isnan(numpy_image)
+        # mask = np.isnan(numpy_image)
 
-        # Replace NaN values with 0 using the mask
-        numpy_image[mask] = 0
+        # # Replace NaN values with 0 using the mask
+        # numpy_image[mask] = 0
 
         ndvi_data = {}
         for data in result:
-            ndvi_data[data['date']] = np.nanmean(data['ndvi'])
+            tmp_array = np.where(data['ndvi'] == None, np.nan, data['ndvi'])
+            ndvi_data[data['date']] = np.nanmean(tmp_array)
 
         # Convert the NumPy array to a PIL Image and save it temporarily
         image_uri = to_image(numpy_image)
-        
+
         # Return the image URI and NDVI data in the JSON response
         return JsonResponse({'image_uri': image_uri, 'ndvi_data': ndvi_data})
     else:
         return JsonResponse({'message': 'Invalid request.'}, status=400)
-
 
 
 class Landsat8NdviDownloadView(APIView):
@@ -157,13 +154,12 @@ class ModisLSTDownloadView(APIView):
         return Response(result, status=status.HTTP_200_OK)
 
 
-
 class Sentinel1DownloadView(APIView):
     def post(self, request):
-        modisLst = ModisLst()
+        sentinel1 = Sentinel1()
         polygon = request.data.get('polygon', None)
         start_date = request.data.get('start_date', None)
         end_date = request.data.get('end_date', None)
-        band=request.data.get('band',None)
-        result = modisLst.download(polygon, start_date, end_date)
+        band = request.data.get('band', None)
+        result = sentinel1.download(polygon, band, start_date, end_date)
         return Response(result, status=status.HTTP_200_OK)

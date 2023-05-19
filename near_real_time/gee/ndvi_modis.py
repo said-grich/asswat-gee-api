@@ -32,5 +32,6 @@ class ModisNdvi:
                 array_modis = np.array(masked_.getInfo()["properties"]["NDVI"])
                 array_modis = array_modis * 0.0001
                 array_modis = np.where(array_modis == -999, np.nan, array_modis)
+                
                 modis_resault.append({"ndvi": array_modis, "date": date_string_modis, "product": 'MOD11A1'})
             return modis_resault

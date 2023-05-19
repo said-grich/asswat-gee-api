@@ -173,6 +173,7 @@
     map.addControl(drawControl);
 
     var selectedPolygon = [];
+    var selectedPolygon1 = [];
 
     map.on("draw:created", function (e) {
         var layer = e.layer;
@@ -181,6 +182,10 @@
         // Get the polygon coordinates
         var polygon = layer.toGeoJSON();
         selectedPolygon = polygon.geometry.coordinates[0];
+        selectedPolygon1 = polygon.geometry.coordinates[0].map(function (coord) {
+            return [coord[1], coord[0]]; // Invert the coordinates
+        });
+        
     });
 
     $("#submit-button").click(function () {
@@ -208,6 +213,32 @@
                     // Update the image source with the returned image URI
                     var imageField = document.getElementById("image-field");
                     imageField.src = response.image_uri;
+                    var image = new Image();
+                    image.src = response.image_uri;
+
+                    image.onload = function() {
+                        // Create a Leaflet image overlay using the image dimensions
+                        var overlay = L.imageOverlay(image.src, selectedPolygon1);
+                        
+   
+                        // Add the image overlay to the map
+                        overlay.addTo(map);
+                        
+                        // Set the map bounds to fit the image overlay
+                        map.fitBounds(overlay.getBounds());
+                    };
+
+
+
+
+
+
+
+
+
+
+
+
                     imageField.style.display = "block";
                 } else {
                     // Hide the image if no image URI is returned
