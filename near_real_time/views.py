@@ -155,3 +155,15 @@ class ModisLSTDownloadView(APIView):
         end_date = request.data.get('end_date', None)
         result = modisLst.download(polygon, start_date, end_date)
         return Response(result, status=status.HTTP_200_OK)
+
+
+
+class Sentinel1DownloadView(APIView):
+    def post(self, request):
+        modisLst = ModisLst()
+        polygon = request.data.get('polygon', None)
+        start_date = request.data.get('start_date', None)
+        end_date = request.data.get('end_date', None)
+        band=request.data.get('band',None)
+        result = modisLst.download(polygon, start_date, end_date)
+        return Response(result, status=status.HTTP_200_OK)

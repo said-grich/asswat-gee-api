@@ -24,14 +24,18 @@ class Sentinel2Ndvi:
             .filterDate(startDate, endDate) \
             .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 1))
         sentinel_resault = []
-        for image in collection.toList(collection.size()).getInfo():
-            sentinel_image = ee.Image(image['id'])
-            sentinel_image = self.addNDVI(sentinel_image).select(['NDVI'])
-            date_string_sentinel = ee.Date(sentinel_image.get('system:time_start')).format('YYYY-MM-dd').getInfo()
-            masked_image = self.mask_out(sentinel_image)
-            array_sentinel = masked_image.getInfo()
-            array_sentinel = np.array(array_sentinel["properties"]["NDVI"])
-            array_sentinel = np.where(array_sentinel == -999,None, array_sentinel)
-            sentinel_resault.append(
-                {"ndvi": array_sentinel, "date": date_string_sentinel, "product": 'S2_SR_HARMONIZED'})
-        return sentinel_resault
+        collection_size=collection.size().getInfo();
+        if collection_size > 0:
+            for image in collection.toList(collection.size()).getInfo():
+                sentinel_image = ee.Image(image['id'])
+                sentinel_image = self.addNDVI(sentinel_image).select(['NDVI'])
+                date_string_sentinel = ee.Date(sentinel_image.get('system:time_start')).format('YYYY-MM-dd').getInfo()
+                masked_image = self.mask_out(sentinel_image)
+                array_sentinel = masked_image.getInfo()
+                array_sentinel = np.array(array_sentinel["properties"]["NDVI"])
+                array_sentinel = np.where(array_sentinel == -999,np.nan, array_sentinel)
+                sentinel_resault.append(
+                    {"ndvi": array_sentinel, "date": date_string_sentinel, "product": 'S2_SR_HARMONIZED'})
+            return sentinel_resault
+        else:
+            raise Exception("No data found in the entered date range")

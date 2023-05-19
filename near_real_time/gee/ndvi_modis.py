@@ -23,7 +23,7 @@ class ModisNdvi:
         modis_resault = []
         # Check if the collection has any images
         if collection.size().getInfo() == 0:
-            return "No images available for the specified region and time range."
+            raise Exception("No data found in the entered date range")
         else:
             for image in collection.toList(collection.size()).getInfo():
                 image_modis = ee.Image(image['id']).select([band_name])
@@ -31,6 +31,6 @@ class ModisNdvi:
                 masked_ = self.mask_out(image_modis)
                 array_modis = np.array(masked_.getInfo()["properties"]["NDVI"])
                 array_modis = array_modis * 0.0001
-                array_modis = np.where(array_modis == -999, None, array_modis)
+                array_modis = np.where(array_modis == -999, np.nan, array_modis)
                 modis_resault.append({"ndvi": array_modis, "date": date_string_modis, "product": 'MOD11A1'})
             return modis_resault

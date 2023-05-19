@@ -25,7 +25,7 @@ class ModisLst:
         modis_resault = []
         # Check if the collection has any images
         if collection.size().getInfo() == 0:
-            print("No images available for the specified region and time range.")
+           raise Exception("No data found in the entered date range")
         else:
             for image in collection.toList(collection.size()).getInfo():
                 image_modis = ee.Image(image['id']).select([band_name])
@@ -33,7 +33,7 @@ class ModisLst:
                 acquisition_time = ee.Date(image_modis.get('system:time_start')).getInfo()
                 masked_ = self.mask_out(image_modis)
                 array_modis = np.array(masked_.getInfo()["properties"]["LST_Day_1km"])
-                array_modis = np.where(array_modis == -999, None, array_modis)
+                array_modis = np.where(array_modis == -999, np.nan, array_modis)
                 modis_resault.append({"lst": array_modis * 0.02, "date": date_string_modis, "product": 'MOD11A2',
 
                                       })
