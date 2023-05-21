@@ -27,11 +27,12 @@ class ModisNdvi:
         else:
             for image in collection.toList(collection.size()).getInfo():
                 image_modis = ee.Image(image['id']).select([band_name])
+                projection = image_modis.select(0).projection()
+                transform = projection.getInfo()['transform']
                 date_string_modis = ee.Date(image_modis.get('system:time_start')).format('YYYY-MM-dd').getInfo()
                 masked_ = self.mask_out(image_modis)
                 array_modis = np.array(masked_.getInfo()["properties"]["NDVI"])
                 array_modis = array_modis * 0.0001
                 array_modis = np.where(array_modis == -999, np.nan, array_modis)
-                
-                modis_resault.append({"ndvi": array_modis, "date": date_string_modis, "product": 'MOD11A1'})
+                modis_resault.append({"ndvi": array_modis, "date": date_string_modis,"transform":transform ,"product": 'MOD11A1'})
             return modis_resault

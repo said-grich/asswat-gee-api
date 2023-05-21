@@ -27,11 +27,13 @@ class SMAP_soil_moisture:
         else:
             for image in collection.toList(collection.size()).getInfo():
                 smap = ee.Image(image['id']).select([band])
+                projection = smap.select(0).projection()
+                transform = projection.getInfo()['transform']
                 date_string_era5 = ee.Date(smap.get('system:time_start')).format('YYYY-MM-dd').getInfo()
                 masked_=self.mask_out(smap)
                 array_smap=np.array(masked_.getInfo()["properties"][band]) 
                 array_smap= np.where(array_smap == -999,None, array_smap)
-                smap_resault.append({band: array_smap, "date": date_string_era5 , "product":'SMAP'})
+                smap_resault.append({band: array_smap, "date": date_string_era5 ,"transform":transform ,"product":'SMAP'})
             return smap_resault
     
     def download(self,polygon,variables_lists,start_date,end_date):

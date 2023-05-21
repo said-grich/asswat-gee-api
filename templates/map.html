@@ -103,7 +103,14 @@
             <h1 class="mt-5">Google Earth Engine Data Extractor</h1>
             <p class="lead">You'll be seeing shapefiles stored in the database</p>
             <div id="map"></div>
-
+            <div class="form-group">
+                <label for="product-select">Product:</label>
+                <select id="product-select" class="form-control">
+                    {% for product in product_list %}
+                        <option value="{{ product }}">{{ product }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <div class="form-row mt-4">
                 <div class="col">
                     <div class="form-group">
@@ -124,8 +131,9 @@
             <div class="mt-5 text-center">
                 <img id="image-field" src="" alt="Image" class="img-fluid mx-auto" style="display: none;">
             </div>
-
+         <div class="mt-5 text-center">
             <div id="chart" class="mt-5 mx-auto" style="display: none; width: 100%;"></div>
+         </div>
         </div>
     </div>
 </div>
@@ -146,14 +154,14 @@
     });
     var map = L.map("map").setView([33.14811080869278, -8.469759582233934], 10);
 
-    L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
-        maxZoom: 20,
-        attribution: "Google Satellite",
-        id: "mapbox/satellite-v9",
+    L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=pk.eyJ1Ijoic2FhZDA2IiwiYSI6ImNrdG90OGNvaDBmdngydm55djcwcjN3YmIifQ.Yo8P8RxM363E0KEf39cmtA", {
+        attribution: 'Map data &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
+        maxZoom: 22,
         tileSize: 512,
         zoomOffset: -1,
+        accessToken: "pk.eyJ1Ijoic2FhZDA2IiwiYSI6ImNrdG90OGNvaDBmdngydm55djcwcjN3YmIifQ.Yo8P8RxM363E0KEf39cmtA"
     }).addTo(map);
-
+    
     var drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
 
@@ -189,12 +197,26 @@
     });
 
     $("#submit-button").click(function () {
-        // Get the start date and end date values
+
         var startDate = $("#start-date").val();
         var endDate = $("#end-date").val();
+        var selectedProduct = $("#product-select").val();
 
-        console.log(selectedPolygon, startDate, endDate);
-        // Send the AJAX request
+         // Date validation
+         if (!isValidDate(startDate) || !isValidDate(endDate)) {
+            alert("Invalid date format. Please enter dates in yyyy-mm-dd format.");
+
+            return
+        }
+
+        // Compare start date and end date
+        if (startDate > endDate) {
+            alert("End date must be greater than or equal to start date.");
+            return
+        }
+
+
+
         $.ajax({
             url: "get_polygon_coordinates/",
             type: "POST",
@@ -203,6 +225,7 @@
                 startDate: startDate,
                 endDate: endDate,
                 coordinates: JSON.stringify(selectedPolygon),
+                selectedProduct: selectedProduct
             },
             beforeSend: function () {
                 // Show the spinner before the request starts
@@ -215,29 +238,24 @@
                     imageField.src = response.image_uri;
                     var image = new Image();
                     image.src = response.image_uri;
-
                     image.onload = function() {
                         // Create a Leaflet image overlay using the image dimensions
-                        var overlay = L.imageOverlay(image.src, selectedPolygon1);
+                        var overlay = L.imageOverlay(image.src, selectedPolygon1, {
+                            opacity: 1,  // Adjust the opacity as needed
+                            attribution: 'Image source',  // Replace with the appropriate attribution
+                            interactive: true,  // Set to true if you want the overlay to be interactive
+                            alt: 'Image overlay',  // Replace with an appropriate alt text
+                            errorOverlayUrl: '',  // Replace with an appropriate error overlay image URL
+                            crossOrigin: true,  // Set to true if the image is served from a different domain
+                            transform: L.Transformation(response.transform[0], response.transform[1], response.transform[2], response.transform[3], response.transform[4], response.transform[5])  // Set the transformation values accordingly
+                          });
                         
-   
-                        // Add the image overlay to the map
-                        overlay.addTo(map);
+                          // Add the image overlay to the map
+                          overlay.addTo(map);
                         
-                        // Set the map bounds to fit the image overlay
-                        map.fitBounds(overlay.getBounds());
+                          // Set the map bounds to fit the image overlay
+                          map.fitBounds(overlay.getBounds());
                     };
-
-
-
-
-
-
-
-
-
-
-
 
                     imageField.style.display = "block";
                 } else {
@@ -249,7 +267,8 @@
                 if (response.ndvi_data) {
                     // Process the NDVI data
                     var ndviData = response.ndvi_data;
-
+                    var title=response.title;
+                    var variable=response.variable;
                     // Prepare data for the chart
                     var dates = Object.keys(ndviData);
                     var ndviValues = Object.values(ndviData);
@@ -273,12 +292,12 @@
                     ];
 
                     var layout = {
-                        title: "NDVI by Time",
+                        title: title,
                         xaxis: {
                             title: "Date",
                         },
                         yaxis: {
-                            title: "NDVI",
+                            title:variable,
                         },
                     };
 
@@ -295,7 +314,13 @@
                 $("#spinner").hide();
             },
         });
+
+        
     });
+    function isValidDate(dateString) {
+        var pattern = /^\d{4}-\d{2}-\d{2}$/;
+        return pattern.test(dateString);
+    }
 </script>
 </body>
 </html>

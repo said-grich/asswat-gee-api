@@ -27,12 +27,14 @@ class ERA5_LAND:
             print("No images available for the specified region and time range.")
         else:
             for image in collection.toList(collection.size()).getInfo():
-                image_modis = ee.Image(image['id']).select([band])
-                date_string_era5 = ee.Date(image_modis.get('system:time_start')).format('YYYY-MM-dd').getInfo()
-                masked_=self.mask_out(image_modis)
+                era5_modis = ee.Image(image['id']).select([band])
+                projection = era5_modis.select(0).projection()
+                transform = projection.getInfo()['transform']
+                date_string_era5 = ee.Date(era5_modis.get('system:time_start')).format('YYYY-MM-dd').getInfo()
+                masked_=self.mask_out(era5_modis)
                 array_era5=np.array(masked_.getInfo()["properties"][band]) 
                 array_era5= np.where(array_era5 == -999, np.nan, array_era5)
-                er5_resault.append({band: array_era5-273.5, "date": date_string_era5 , "product":'MOD11A2'})
+                er5_resault.append({band: array_era5-273.5, "date": date_string_era5 ,"transform":transform ,"product":'ERA5'})
             return er5_resault
     
     def download(self,polygon,variables_lists,start_date,end_date):

@@ -16,6 +16,7 @@ from near_real_time.gee.SMAP_soil_moisture import SMAP_soil_moisture
 from near_real_time.gee.era_5_land import ERA5_LAND
 from near_real_time.gee.lst_landsat8 import Landsat8Lst
 from near_real_time.gee.lst_modis import ModisLst
+from near_real_time.gee.ndvi_landsat5 import Landsat5Ndvi
 from near_real_time.gee.ndvi_landsat8 import Landsat8Ndvi
 from near_real_time.gee.ndvi_modis import ModisNdvi
 from near_real_time.gee.ndvi_sentinel import Sentinel2Ndvi
@@ -23,6 +24,17 @@ from near_real_time.gee.vv_sntinel1 import Sentinel1
 
 
 def map_view(request):
+
+    product_list = [
+        "NDVI LANDSAT-5 (1984-012)",
+        "NDVI LANDSAT-8 (2013-Present)",
+        "LST LANDSAT-8 (2013-Present)",
+        "NDVI MODIS (2013-Present)",
+        "LST MODIS (2013-Present)",
+        "NDVI SENTINEL-2 (2015-Present)",
+        "SENTINEL-1 (2014-Present)",
+        "ERA5-Land Daily Aggregated (1963-2023)",
+    ]
     # Create a Folium map centered at a specific location
     m = folium.Map(location=[-8.469759582233934,
                              33.14811080869278], zoom_start=8, crs='EPSG4326', control_scale=True)
@@ -36,18 +48,20 @@ def map_view(request):
 
     # Save the map as an HTML file
     m.save('map.html')
-
+    context = {
+        'product_list': product_list,
+    }
     # Render the HTML file in the Django template
-    return render(request, 'map.html')
+    return render(request, 'map.html' ,context)
+
 
 def to_image(numpy_img):
     # Normalize the NDVI data to 0-255 range
-    normalized_img = (numpy_img + 1) * 127.5
+    normalized_img = (numpy_img+1) * 127.5
     normalized_img = normalized_img.astype('uint8')
 
     # Create a figure and axis
-    fig, ax = plt.subplots(figsize=(5, 5))
-
+    fig, ax = plt.subplots()
     # Display the NDVI image
     ax.imshow(normalized_img, cmap='RdYlGn', vmin=0, vmax=255)
 
@@ -78,28 +92,87 @@ def get_polygon_coordinates(request):
         start_date = request.POST.get('startDate')
         end_date = request.POST.get('endDate')
         coordinates = json.loads(coordinates)
-        print(coordinates)
-        sentinel2Ndvi = Sentinel2Ndvi()
+        selectedProduct = request.POST.get('selectedProduct')
+        
+        product = None
+        variable=None
+        title=None
+        if selectedProduct == 'NDVI LANDSAT-5 (1984-012)':
+            title="Ndvi By Date"
+            variable="ndvi"
+            # Handle NDVI LANDSAT-5 (1984-012) case
+            product = Landsat5Ndvi()
+            result = product.download(coordinates, start_date, end_date)
+            numpy_image = result[0]["ndvi"]
+            
+            
+            
+        elif selectedProduct == 'NDVI LANDSAT-8 (2013-Present)':
+            title="Ndvi By Date"
+            variable="ndvi"
+            # Handle NDVI LANDSAT-8 (2013-Present) case
+            product = Landsat8Ndvi()
+            result = product.download(coordinates, start_date, end_date)
+        
+            numpy_image = result[0]["ndvi"]
+        elif selectedProduct == 'LST LANDSAT-8 (2013-Present)':
+            title="LST By Date"
+            variable="lst"
+            
+            product = Landsat8Lst()
 
-        result = sentinel2Ndvi.download(coordinates, start_date, end_date)
-        numpy_image = result[0]["ndvi"]
-        numpy_image = np.where(numpy_image == None,0, numpy_image)
-        # Create a boolean mask for NaN values
-        # mask = np.isnan(numpy_image)
+            # Handle LST LANDSAT-8 (2013-Present) case
+            result = product.download(coordinates, start_date, end_date)
+            numpy_image = result[0]["lst"]
+        elif selectedProduct == 'NDVI MODIS (2013-Present)':
+            title="Ndvi By Date"
+            variable="ndvi"
+            # Handle NDVI MODIS (2013-Present) case
+            result = product.download(coordinates, start_date, end_date)
+            numpy_image = result[0]["ndvi"]
+            product = ModisNdvi()
+        elif selectedProduct == 'LST MODIS (2013-Present)':
+            title="LST By Date"
+            variable="lst"
+            # Handle LST MODIS (2013-Present) case
+            product = ModisLst()
+            result = product.download(coordinates, start_date, end_date)
+            numpy_image = result[0]["lst"]
+        elif selectedProduct == 'NDVI SENTINEL-2 (2015-Present)':
+            title="Ndvi By Date"
+            variable="ndvi"
+            # Handle NDVI SENTINEL-2 (2015-Present) case
+            product = Sentinel2Ndvi()
+            result = product.download(coordinates, start_date, end_date)
+            numpy_image = result[0]["ndvi"]
+        elif selectedProduct == 'SENTINEL-1 (2014-Present)':
+            pass
+            product = Sentinel1()
+        elif selectedProduct == 'ERA5-Land Daily Aggregated (1963-2023)':
+            pass
+            # Handle ERA5-Land Daily Aggregated (1963-2023) case
+            product = Sentinel1()
+        else:
+            # Handle unknown product case
+            raise ValueError('No product selected!')
 
-        # # Replace NaN values with 0 using the mask
-        # numpy_image[mask] = 0
+
+        numpy_image = np.where(numpy_image == None, 0, numpy_image)
 
         ndvi_data = {}
         for data in result:
-            tmp_array = np.where(data['ndvi'] == None, np.nan, data['ndvi'])
+            tmp_array = np.where(data[variable] == None, np.nan, data[variable])
             ndvi_data[data['date']] = np.nanmean(tmp_array)
+        # Sort the NDVI data by date
+        sorted_ndvi_data = {k: v for k, v in sorted(ndvi_data.items(), key=lambda item: item[0])}
+
 
         # Convert the NumPy array to a PIL Image and save it temporarily
         image_uri = to_image(numpy_image)
+        transform=result[0]['transform']
 
         # Return the image URI and NDVI data in the JSON response
-        return JsonResponse({'image_uri': image_uri, 'ndvi_data': ndvi_data})
+        return JsonResponse({'image_uri': image_uri, 'ndvi_data': sorted_ndvi_data, "transform":transform , "title":title , "variable":variable}   )
     else:
         return JsonResponse({'message': 'Invalid request.'}, status=400)
 
@@ -175,14 +248,17 @@ class ERA5_LAND_D_DownloadView(APIView):
         result = era5.download(polygon, bands, start_date, end_date)
         return Response(result, status=status.HTTP_200_OK)
 
+
 class SMAP_DownloadView(APIView):
     def post(self, request):
         smap_soil_moisture = SMAP_soil_moisture()
         polygon = request.data.get('polygon', None)
         start_date = request.data.get('start_date', None)
         end_date = request.data.get('end_date', None)
-        result = smap_soil_moisture.download(polygon, ["ssm"], start_date, end_date)
+        result = smap_soil_moisture.download(
+            polygon, ["ssm"], start_date, end_date)
         return Response(result, status=status.HTTP_200_OK)
+
 
 class SMAP10KM_soil_moistureView(APIView):
     def post(self, request):
@@ -190,5 +266,6 @@ class SMAP10KM_soil_moistureView(APIView):
         polygon = request.data.get('polygon', None)
         start_date = request.data.get('start_date', None)
         end_date = request.data.get('end_date', None)
-        result = smap_soil_moisture.download(polygon, ["ssm"], start_date, end_date)
+        result = smap_soil_moisture.download(
+            polygon, ["ssm"], start_date, end_date)
         return Response(result, status=status.HTTP_200_OK)

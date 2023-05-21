@@ -16,8 +16,8 @@ class ModisLst:
         self.polygon = ee.Geometry.Polygon(polygon)
         # Load the image collection
         collection = ee.ImageCollection('MODIS/006/MOD11A2') \
-            .filterBounds(polygon) \
-            .filterDate(startDate, startDate)
+            .filterBounds(self.polygon) \
+            .filterDate(startDate, endDate)
 
         # Select the desired band
         band_name = "LST_Day_1km"
@@ -29,12 +29,13 @@ class ModisLst:
         else:
             for image in collection.toList(collection.size()).getInfo():
                 image_modis = ee.Image(image['id']).select([band_name])
+                projection = image_modis.select(0).projection()
+                transform = projection.getInfo()['transform']
                 date_string_modis = ee.Date(image_modis.get('system:time_start')).format('YYYY-MM-dd').getInfo()
-                acquisition_time = ee.Date(image_modis.get('system:time_start')).getInfo()
                 masked_ = self.mask_out(image_modis)
                 array_modis = np.array(masked_.getInfo()["properties"]["LST_Day_1km"])
                 array_modis = np.where(array_modis == -999, np.nan, array_modis)
-                modis_resault.append({"lst": array_modis * 0.02, "date": date_string_modis, "product": 'MOD11A2',
+                modis_resault.append({"lst": array_modis * 0.02, "date": date_string_modis,"transform":transform, "product": 'MOD11A2',
 
                                       })
             return modis_resault

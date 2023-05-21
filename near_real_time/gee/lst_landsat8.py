@@ -60,14 +60,15 @@ class Landsat8Lst:
         # Iterate over the collection and calculate NDVI mean and LST for each image
             for image in collection.toList(collection.size()).getInfo():
                 image = ee.Image(image['id'])
+                projection = image.select(0).projection()
+                transform = projection.getInfo()['transform']
                 image = self.addLST(image).select(['LST'])
                 date_string = ee.Date(image.get('system:time_start')).format('YYYY-MM-dd').getInfo()
-
                 masked_image = self.mask_out(image)
                 array = masked_image.getInfo()
                 array = np.array(array["properties"]["LST"])
                 array = np.where(array == -999,np.nan, array)
-                landsat_result.append({"lst": array, "date": date_string, "product": 'T1_L2'})
+                landsat_result.append({"lst": array, "date": date_string,"transform":transform ,"product": 'T1_L2'})
 
             return landsat_result
         else:
