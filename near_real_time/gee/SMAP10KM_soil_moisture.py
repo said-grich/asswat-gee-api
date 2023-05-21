@@ -11,8 +11,9 @@ class SMAP10KM_soil_moisture:
         
 
     def mask_out(self,image):
-        clipped_image = image.clip(self.polygon)
-        samples = clipped_image.unmask(-999).sampleRectangle(region=self.polygon, defaultValue=-999)
+        bounds = self.polygon.bounds()
+        clipped_image = image.clip(bounds)
+        samples = clipped_image.unmask(-999).sampleRectangle(region=bounds, defaultValue=-999)
         return samples
 
     def download_band(self,band):
@@ -20,19 +21,18 @@ class SMAP10KM_soil_moisture:
         collection = ee.ImageCollection('NASA_USDA/HSL/SMAP10KM_soil_moisture') \
                         .filterBounds(self.polygon) \
                         .filterDate(self.start_date, self.end_date)
-        er5_resault=[]
+        smap_resault=[]
         # Check if the collection has any images
         if collection.size().getInfo() == 0:
             print("No images available for the specified region and time range.")
         else:
             for image in collection.toList(collection.size()).getInfo():
-                image_modis = ee.Image(image['id']).select([band])
-                date_string_era5 = ee.Date(image_modis.get('system:time_start')).format('YYYY-MM-dd').getInfo()
-                masked_=self.mask_out(image_modis)
-                array_era5=np.array(masked_.getInfo()["properties"][band]) 
-                array_era5= np.where(array_era5 == -999, np.nan, array_era5)
-                er5_resault.append({band: array_era5-273.5, "date": date_string_era5 , "product":'MOD11A2'})
-            return er5_resault
+                image_smap = ee.Image(image['id']).select([band])
+                date_string_smap = ee.Date(image_smap.get('system:time_start')).format('YYYY-MM-dd').getInfo()
+                masked_=self.mask_out(image_smap)
+                array_smap=np.array(masked_.getInfo()["properties"][band]) 
+                smap_resault.append({band: array_smap, "date": date_string_smap , "product":'SMAP10'})
+            return smap_resault
     
     def download(self,polygon,variables_lists,start_date,end_date):
         self.polygon = ee.Geometry.Polygon(polygon)

@@ -11,6 +11,8 @@ from django.shortcuts import render
 import folium
 from folium.plugins import Draw
 from django.http import JsonResponse
+from near_real_time.gee.SMAP10KM_soil_moisture import SMAP10KM_soil_moisture
+from near_real_time.gee.SMAP_soil_moisture import SMAP_soil_moisture
 from near_real_time.gee.era_5_land import ERA5_LAND
 from near_real_time.gee.lst_landsat8 import Landsat8Lst
 from near_real_time.gee.lst_modis import ModisLst
@@ -171,4 +173,22 @@ class ERA5_LAND_D_DownloadView(APIView):
         end_date = request.data.get('end_date', None)
         bands = request.data.get('bands', None)
         result = era5.download(polygon, bands, start_date, end_date)
+        return Response(result, status=status.HTTP_200_OK)
+
+class SMAP_DownloadView(APIView):
+    def post(self, request):
+        smap_soil_moisture = SMAP_soil_moisture()
+        polygon = request.data.get('polygon', None)
+        start_date = request.data.get('start_date', None)
+        end_date = request.data.get('end_date', None)
+        result = smap_soil_moisture.download(polygon, ["ssm"], start_date, end_date)
+        return Response(result, status=status.HTTP_200_OK)
+
+class SMAP10KM_soil_moistureView(APIView):
+    def post(self, request):
+        smap_soil_moisture = SMAP10KM_soil_moisture()
+        polygon = request.data.get('polygon', None)
+        start_date = request.data.get('start_date', None)
+        end_date = request.data.get('end_date', None)
+        result = smap_soil_moisture.download(polygon, ["ssm"], start_date, end_date)
         return Response(result, status=status.HTTP_200_OK)

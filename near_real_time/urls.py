@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ERA5_LAND_D_DownloadView, Landsat8NdviDownloadView, Sentinel1DownloadView, Sentinel2NdviDownloadView, Landsat8LSTDownloadView, ModisLSTDownloadView, \
+from .views import ERA5_LAND_D_DownloadView, Landsat8NdviDownloadView, SMAP10KM_soil_moistureView, SMAP_DownloadView, Sentinel1DownloadView, Sentinel2NdviDownloadView, Landsat8LSTDownloadView, ModisLSTDownloadView, \
     ModisNdviDownloadView, map_view, get_polygon_coordinates
 
 urlpatterns = [
@@ -16,6 +16,11 @@ urlpatterns = [
          name='sentinel_download'),
     path('era5/', ERA5_LAND_D_DownloadView.as_view(),
          name='era_download'),
+    
+    path('smap/', SMAP_DownloadView.as_view(),
+         name='smap'),
+    path('smap10/', SMAP10KM_soil_moistureView.as_view(),
+         name='smap'),
     path('', map_view, name='gee_map'),
     
     path('get_polygon_coordinates/', get_polygon_coordinates,

@@ -11,8 +11,9 @@ class ERA5_LAND:
         
 
     def mask_out(self,image):
-        clipped_image = image.clip(self.polygon)
-        samples = clipped_image.unmask(-999).sampleRectangle(region=self.polygon, defaultValue=-999)
+        bounds = self.polygon.bounds()
+        clipped_image = image.clip(bounds)
+        samples = clipped_image.unmask(-999).sampleRectangle(region=bounds, defaultValue=-999)
         return samples
 
     def download_band(self,band):
