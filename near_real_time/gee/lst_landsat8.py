@@ -2,7 +2,7 @@ import ee
 import numpy as np
 
 
-class LandsatLst:
+class Landsat8Lst:
     def __init__(self):
         self.polygon = None
     def mask_out(self,image):

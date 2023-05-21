@@ -10,10 +10,9 @@ from rest_framework import status
 from django.shortcuts import render
 import folium
 from folium.plugins import Draw
-
 from django.http import JsonResponse
-
-from near_real_time.gee.lst_landsat import LandsatLst
+from near_real_time.gee.era_5_land import ERA5_LAND
+from near_real_time.gee.lst_landsat8 import Landsat8Lst
 from near_real_time.gee.lst_modis import ModisLst
 from near_real_time.gee.ndvi_landsat8 import Landsat8Ndvi
 from near_real_time.gee.ndvi_modis import ModisNdvi
@@ -38,7 +37,6 @@ def map_view(request):
 
     # Render the HTML file in the Django template
     return render(request, 'map.html')
-
 
 def to_image(numpy_img):
     # Normalize the NDVI data to 0-255 range
@@ -116,7 +114,7 @@ class Landsat8NdviDownloadView(APIView):
 
 class Landsat8LSTDownloadView(APIView):
     def post(self, request):
-        landsatLst = LandsatLst()
+        landsatLst = Landsat8Lst()
         polygon = request.data.get('polygon', None)
         start_date = request.data.get('start_date', None)
         end_date = request.data.get('end_date', None)
@@ -162,4 +160,15 @@ class Sentinel1DownloadView(APIView):
         end_date = request.data.get('end_date', None)
         band = request.data.get('band', None)
         result = sentinel1.download(polygon, band, start_date, end_date)
+        return Response(result, status=status.HTTP_200_OK)
+
+
+class ERA5_LAND_D_DownloadView(APIView):
+    def post(self, request):
+        era5 = ERA5_LAND()
+        polygon = request.data.get('polygon', None)
+        start_date = request.data.get('start_date', None)
+        end_date = request.data.get('end_date', None)
+        bands = request.data.get('bands', None)
+        result = era5.download(polygon, bands, start_date, end_date)
         return Response(result, status=status.HTTP_200_OK)
