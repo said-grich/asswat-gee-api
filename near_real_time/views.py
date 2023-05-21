@@ -125,12 +125,13 @@ def get_polygon_coordinates(request):
             result = product.download(coordinates, start_date, end_date)
             numpy_image = result[0]["lst"]
         elif selectedProduct == 'NDVI MODIS (2013-Present)':
+            product = ModisNdvi()
+
             title="Ndvi By Date"
             variable="ndvi"
             # Handle NDVI MODIS (2013-Present) case
             result = product.download(coordinates, start_date, end_date)
             numpy_image = result[0]["ndvi"]
-            product = ModisNdvi()
         elif selectedProduct == 'LST MODIS (2013-Present)':
             title="LST By Date"
             variable="lst"
