@@ -1,3 +1,5 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -103,6 +105,11 @@
             <h1 class="mt-5">Google Earth Engine Data Extractor</h1>
             <p class="lead">You'll be seeing shapefiles stored in the database</p>
             <div id="map"></div>
+            
+            <div class="mt-5 text-center">
+            <input type="file" id="file-input">
+
+            <div class="mt-5 text-center">
             <div class="form-group">
                 <label for="product-select">Product:</label>
                 <select id="product-select" class="form-control">
@@ -146,6 +153,10 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"
         integrity="sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+" crossorigin="anonymous"></script>
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet-omnivore@0.4.5/leaflet-omnivore.min.js"></script>
+
+<script src="{% static 'leaflet-omnivore.min.js' %}"></script>
 
 <script>
     $(".datepicker").datepicker({
@@ -195,6 +206,33 @@
         });
         
     });
+    var fileInput = document.getElementById('file-input');
+
+    fileInput.addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (file) {
+          // Load the ZIP file containing the shapefile
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var shapefileData = e.target.result;
+    
+            // Extract the contents of the ZIP file
+            JSZip.loadAsync(shapefileData)
+              .then(function(zip) {
+                // Find the shapefile within the ZIP file (assuming it's named 'shapefile.shp')
+                var shapefileData = zip.file('shapefile.shp');
+    
+                // Read the shapefile data as a Blob
+                return shapefileData
+              })
+              .then(function(shapefileBlob) {
+                // Import the shapefile and display it on the map
+                omnivore.shp(shapefileBlob).addTo(map);
+              });
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      });
 
     $("#submit-button").click(function () {
 
@@ -205,17 +243,14 @@
          // Date validation
          if (!isValidDate(startDate) || !isValidDate(endDate)) {
             alert("Invalid date format. Please enter dates in yyyy-mm-dd format.");
-
-            return
+            return;
         }
 
         // Compare start date and end date
         if (startDate > endDate) {
             alert("End date must be greater than or equal to start date.");
-            return
+            return;
         }
-
-
 
         $.ajax({
             url: "get_polygon_coordinates/",
@@ -272,7 +307,7 @@
                     // Prepare data for the chart
                     var dates = Object.keys(ndviData);
                     var ndviValues = Object.values(ndviData);
-                    console.log(ndviData);
+
                     // Create the chart
                     var chartData = [
                         {
@@ -297,7 +332,7 @@
                             title: "Date",
                         },
                         yaxis: {
-                            title:variable,
+                            title: variable,
                         },
                     };
 
@@ -314,13 +349,13 @@
                 $("#spinner").hide();
             },
         });
-
-        
     });
+
     function isValidDate(dateString) {
         var pattern = /^\d{4}-\d{2}-\d{2}$/;
         return pattern.test(dateString);
     }
 </script>
+
 </body>
 </html>
